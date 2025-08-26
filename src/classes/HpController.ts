@@ -1,4 +1,5 @@
-class HpController {
+export class HpController {
+  private hp: number;
   constructor() {
     this.hp = 100;
   }
@@ -7,11 +8,11 @@ class HpController {
     return this.hp;
   }
 
-  setHp(amount) {
+  setHp(amount: number) {
     this.hp = amount;
   }
 
-  attack(amount) {
+  attack(amount: number) {
     this.hp -= amount;
 
     return this.hp;

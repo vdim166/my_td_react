@@ -1,4 +1,13 @@
-export function moveAlongLine(line, currentPos, distance) {
+type LineType = {
+  p1: PointType;
+  p2: PointType;
+};
+
+export function moveAlongLine(
+  line: LineType,
+  currentPos: PointType,
+  distance: number
+) {
   const { p1, p2 } = line;
 
   // Calculate the direction vector of the line
@@ -25,10 +34,10 @@ export function moveAlongLine(line, currentPos, distance) {
 }
 
 export function drawEmptyCircle(
-  ctx,
-  x,
-  y,
-  radius,
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  radius: number,
   color = "black",
   lineWidth = 1
 ) {
@@ -39,7 +48,11 @@ export function drawEmptyCircle(
   ctx.stroke(); // Draw the outline
 }
 
-export function isPointInCircle(origin, radius, target) {
+export function isPointInCircle(
+  origin: PointType,
+  radius: number,
+  target: PointType
+) {
   // Calculate squared distance (avoid square root for performance)
   const dx = target.x - origin.x;
   const dy = target.y - origin.y;
@@ -49,7 +62,7 @@ export function isPointInCircle(origin, radius, target) {
   return distanceSquared <= radius * radius;
 }
 
-export function isBeyondLine(line, position) {
+export function isBeyondLine(line: LineType, position: PointType) {
   const { p1, p2 } = line;
 
   // Vector of the line

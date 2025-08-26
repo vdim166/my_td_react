@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { GameHub } from "../../components/GameHub";
 import cls from "./styles.module.scss";
 import {
@@ -8,6 +8,8 @@ import {
   moveAlongLine,
   type TempTool,
 } from "../../classes/GameEngine";
+import { useGameContext } from "../../hooks/useGameContext";
+import { GAME_TOOLS } from "../../const/GAME_TOOLS";
 
 type EnemyStackType = {
   x: number;
@@ -74,31 +76,29 @@ type EnemyType = {
   health: number;
 };
 
-type TowerType = {
+export type TowerType = {
   x: number;
   y: number;
   width: number;
   height: number;
   color: string;
   damage: number;
+  attackPeriod: number;
 };
 
-const TOOLS = { BUY_TOWER: "BUY_TOWER" } as const;
-
 export const GameInstance = () => {
+  const animationFrameIdRef = useRef<number | null>(null);
+
+  const { selectedTool, towers } = useGameContext();
+
   useEffect(() => {
-    let animationFrameId: null | number = null;
     let stopGame = false;
 
-    let selectedTool: keyof typeof TOOLS | null = TOOLS.BUY_TOWER;
+    let tempTool: TempTool | null = null;
 
     const startGame = async () => {
-      let tempTool: TempTool | null = null;
-
       const enemies: EnemyType[] = [];
       let enemiesStack: EnemyStackType[] | null = null;
-
-      const towers: TowerType[] = [];
 
       const queue = [
         {
@@ -110,9 +110,9 @@ export const GameInstance = () => {
         {
           name: "add enemy",
           action: () => {
-            const enemy = enemiesStack[0];
+            const enemy = enemiesStack![0];
             enemies.push(enemy);
-            enemiesStack.splice(0, 1);
+            enemiesStack!.splice(0, 1);
           },
         },
         {
@@ -124,9 +124,9 @@ export const GameInstance = () => {
         {
           name: "add enemy",
           action: () => {
-            const enemy = enemiesStack[0];
+            const enemy = enemiesStack![0];
             enemies.push(enemy);
-            enemiesStack.splice(0, 1);
+            enemiesStack!.splice(0, 1);
           },
         },
       ];
@@ -138,7 +138,7 @@ export const GameInstance = () => {
       const gameEngine = new GameEngine(gameCanvas);
 
       gameCanvas.addEventListener("mousemove", (e) => {
-        if (selectedTool === TOOLS.BUY_TOWER) {
+        if (selectedTool.current === GAME_TOOLS.BUY_TOWER) {
           tempTool = {
             x: e.clientX - 25,
             y: e.clientY - 25,
@@ -149,13 +149,15 @@ export const GameInstance = () => {
         }
       });
 
-      gameCanvas.addEventListener("click", (e) => {
-        if (selectedTool === TOOLS.BUY_TOWER) {
-          selectedTool = null;
+      gameCanvas.addEventListener("click", () => {
+        console.log("click", selectedTool.current);
+
+        if (selectedTool.current === GAME_TOOLS.BUY_TOWER) {
+          selectedTool.current = null;
 
           const newTower = { ...tempTool } as TowerType;
 
-          // newTower.attackPeriod = Date.now();
+          newTower.attackPeriod = Date.now();
           newTower.damage = 50;
 
           // const { status, money } = moneyController.spendMoney(50);
@@ -163,10 +165,13 @@ export const GameInstance = () => {
           // if (status) {
           // moneyHtml.innerHTML = money;
 
-          towers.push(newTower);
+          towers.current.push(newTower);
+
           // }
 
           tempTool = null;
+
+          console.log("tempTool", tempTool);
         }
       });
 
@@ -211,7 +216,8 @@ export const GameInstance = () => {
         gameEngine.drawPath(currentPath);
 
         gameEngine.drawTempTools(tempTool);
-        gameEngine.drawTowers(towers);
+
+        gameEngine.drawTowers(towers.current);
 
         const castle = {
           ...currentPath[currentPath.length - 1],
@@ -290,8 +296,6 @@ export const GameInstance = () => {
               enemy.whenUpdate = Date.now() + enemy.speed;
             }
           }
-
-          // towers
         }
 
         // if (hpController.isDead()) {
@@ -304,8 +308,8 @@ export const GameInstance = () => {
           return;
         }
 
-        for (let i = 0; i < towers.length; ++i) {
-          const tower = towers[i];
+        for (let i = 0; i < towers.current.length; ++i) {
+          const tower = towers.current[i];
 
           if (tower.attackPeriod > Date.now()) {
             continue;
@@ -342,12 +346,13 @@ export const GameInstance = () => {
 
         updateGame();
         renderGame();
-        animationFrameId = requestAnimationFrame(gameLoop);
+        animationFrameIdRef.current = requestAnimationFrame(gameLoop);
       }
 
       function stopGameLoop() {
         stopGame = true;
-        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        if (animationFrameIdRef.current)
+          cancelAnimationFrame(animationFrameIdRef.current);
       }
 
       const winHandle = () => {
@@ -375,7 +380,7 @@ export const GameInstance = () => {
       const runGame = async () => {
         enemiesStack = loadCurrentEnemyStacks();
         stopGame = false;
-        animationFrameId = requestAnimationFrame(gameLoop);
+        animationFrameIdRef.current = requestAnimationFrame(gameLoop);
         // await startTimer();
 
         for (let i = 0; i < queue.length; i++) {
@@ -393,7 +398,8 @@ export const GameInstance = () => {
     return () => {
       function stopGameLoop() {
         stopGame = true;
-        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        if (animationFrameIdRef.current)
+          cancelAnimationFrame(animationFrameIdRef.current);
       }
       stopGameLoop();
     };
