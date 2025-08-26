@@ -6,6 +6,7 @@ import {
   isBeyondLine,
   isPointInCircle,
   moveAlongLine,
+  type TempTool,
 } from "../../classes/GameEngine";
 
 type EnemyStackType = {
@@ -82,12 +83,18 @@ type TowerType = {
   damage: number;
 };
 
+const TOOLS = { BUY_TOWER: "BUY_TOWER" } as const;
+
 export const GameInstance = () => {
   useEffect(() => {
-    const startGame = async () => {
-      let animationFrameId: null | number = null;
+    let animationFrameId: null | number = null;
+    let stopGame = false;
 
-      let stopGame = false;
+    let selectedTool: keyof typeof TOOLS | null = TOOLS.BUY_TOWER;
+
+    const startGame = async () => {
+      let tempTool: TempTool | null = null;
+
       const enemies: EnemyType[] = [];
       let enemiesStack: EnemyStackType[] | null = null;
 
@@ -130,6 +137,39 @@ export const GameInstance = () => {
 
       const gameEngine = new GameEngine(gameCanvas);
 
+      gameCanvas.addEventListener("mousemove", (e) => {
+        if (selectedTool === TOOLS.BUY_TOWER) {
+          tempTool = {
+            x: e.clientX - 25,
+            y: e.clientY - 25,
+            width: 50,
+            height: 50,
+            color: "red",
+          };
+        }
+      });
+
+      gameCanvas.addEventListener("click", (e) => {
+        if (selectedTool === TOOLS.BUY_TOWER) {
+          selectedTool = null;
+
+          const newTower = { ...tempTool } as TowerType;
+
+          // newTower.attackPeriod = Date.now();
+          newTower.damage = 50;
+
+          // const { status, money } = moneyController.spendMoney(50);
+
+          // if (status) {
+          // moneyHtml.innerHTML = money;
+
+          towers.push(newTower);
+          // }
+
+          tempTool = null;
+        }
+      });
+
       gameEngine.drawBackground();
 
       const canvas = gameEngine.getCanvas();
@@ -170,8 +210,8 @@ export const GameInstance = () => {
         gameEngine.drawBackground();
         gameEngine.drawPath(currentPath);
 
-        // gameEngine.drawTempTools(tempTool);
-        // gameEngine.drawTowers(towers);
+        gameEngine.drawTempTools(tempTool);
+        gameEngine.drawTowers(towers);
 
         const castle = {
           ...currentPath[currentPath.length - 1],
@@ -310,6 +350,28 @@ export const GameInstance = () => {
         if (animationFrameId) cancelAnimationFrame(animationFrameId);
       }
 
+      const winHandle = () => {
+        console.log("game is over");
+
+        stopGameLoop();
+
+        // const index = levels.findIndex((l) => l.name === currentLevel);
+
+        // const isLast = index === levels.length - 1;
+
+        // if (isLast) {
+        //   companyEndHandle();
+        // } else {
+        //   nextLevel();
+        // }
+      };
+
+      const loseHandle = () => {
+        console.log("You lose");
+
+        stopGameLoop();
+      };
+
       const runGame = async () => {
         enemiesStack = loadCurrentEnemyStacks();
         stopGame = false;
@@ -327,6 +389,14 @@ export const GameInstance = () => {
     };
 
     startGame();
+
+    return () => {
+      function stopGameLoop() {
+        stopGame = true;
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      }
+      stopGameLoop();
+    };
   }, []);
 
   return (

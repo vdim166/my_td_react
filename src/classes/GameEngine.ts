@@ -94,7 +94,7 @@ type EnemyType = {
   isDead: boolean;
 };
 
-type TempTool = {
+export type TempTool = {
   x: number;
   y: number;
   width: number;
